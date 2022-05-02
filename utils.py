@@ -31,3 +31,14 @@ def cso_date_to_datetime(df, date_col_name):
     # https://stackoverflow.com/questions/37354105/find-the-end-of-the-month-of-a-pandas-dataframe-series
     from pandas.tseries.offsets import MonthEnd
     df[date_col_name] = pd.to_datetime(df[date_col_name], format='%YM%m') + MonthEnd(1)
+
+def transform_indexmundi_yearly_data(df, col_name_value):
+    from pandas.tseries.offsets import YearEnd
+    df["Market Year"] = pd.to_datetime(df["Market Year"], format='%Y') + YearEnd(1)
+    df = df.rename(columns={"Market Year" : "month", " Value" : col_name_value})
+    df = df.drop([" Unit Description"], axis=1)
+    df = df.set_index("month")
+    df = df.resample('M').last().bfill() / 12
+    df = df[df.index.year > 1989]
+    df = df[df.index.year < 2022]
+    return df

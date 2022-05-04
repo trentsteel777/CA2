@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 import pandas as pd
+# https://stackoverflow.com/questions/37354105/find-the-end-of-the-month-of-a-pandas-dataframe-series
+from pandas.tseries.offsets import MonthEnd, YearEnd
 
 def snake_case_columns(df):
     # snake case column names
@@ -28,12 +30,9 @@ def beef_price_lineplot(title, beef_data):
     plt.show()
 
 def cso_date_to_datetime(df, date_col_name):
-    # https://stackoverflow.com/questions/37354105/find-the-end-of-the-month-of-a-pandas-dataframe-series
-    from pandas.tseries.offsets import MonthEnd
     df[date_col_name] = pd.to_datetime(df[date_col_name], format='%YM%m') + MonthEnd(1)
 
 def transform_indexmundi_yearly_data(df, col_name_value):
-    from pandas.tseries.offsets import YearEnd
     df["Market Year"] = pd.to_datetime(df["Market Year"], format='%Y') + YearEnd(1)
     df = df.rename(columns={"Market Year" : "month", " Value" : col_name_value})
     df = df.drop([" Unit Description"], axis=1)
@@ -42,3 +41,15 @@ def transform_indexmundi_yearly_data(df, col_name_value):
     df = df[df.index.year > 1989]
     df = df[df.index.year < 2022]
     return df
+
+def prepare_forex_data(file_path):
+    df_cur = pd.read_csv(file_path)
+    snake_case_columns(df_cur)
+    
+    # https://dataindependent.com/pandas/pandas-to-datetime-string-to-date-pd-to_datetime/
+    df_cur["date"] = pd.to_datetime(df_cur["date"], format='%b %y') + MonthEnd(1)
+    # only need final day closing price
+    df_cur = df_cur.drop(["open", "high", "low", "change_%"], axis=1) 
+    df_cur = df_cur.set_index("date")
+    df_cur = df_cur.sort_index()
+    return df_cur

@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 import pandas as pd
+import numpy as np
+
 # https://stackoverflow.com/questions/37354105/find-the-end-of-the-month-of-a-pandas-dataframe-series
 from pandas.tseries.offsets import MonthEnd, YearEnd
 
@@ -53,3 +55,23 @@ def prepare_forex_data(file_path):
     df_cur = df_cur.set_index("date")
     df_cur = df_cur.sort_index()
     return df_cur
+
+def transform_fred_stlouisfed_quarterlydata(df, column_index_name):
+    df["DATE"] = pd.to_datetime(df["DATE"], format='%Y-%m-%d') + MonthEnd(1)
+    
+    df.rename(columns= { df.columns[1] : column_index_name })
+    snake_case_columns(df)
+    
+    df = df.set_index("date")
+    df = df.resample('M').last().bfill()
+
+    df_missing = pd.date_range(start=df.tail(1).index[0], end='31-DEC-2021', freq='M').to_frame(index=False, name='date')[1:] # cut first date off since it will be the last date of the real dataframe
+    df_missing[column_index_name] = np.nan
+    df_missing = df_missing.set_index("date")
+
+    df = pd.concat([df, df_missing])
+    df_missing[column_index_name] = df_missing[column_index_name].interpolate(method='linear')
+    # df_missing_months = pd.date_range(start='31-DEC-2021', end='28-FEB-2022', freq='M').to_frame(index=False, name='date')
+    # df_missing_months["pbeefusdm"] = np.nan
+    # df_global_beef = pd.concat([df_global_beef, df_missing_months]).reset_index(drop=True)
+    return df

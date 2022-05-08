@@ -73,4 +73,7 @@ def transform_fred_stlouisfed_quarterlydata(df, column_index_name):
     df = pd.concat([df, df_missing])
     df[column_index_name] = df[column_index_name].interpolate(method='linear', limit_direction='both')
 
+    # df = df.resample('M').last().bfill()
+    df = df[df.index.year > 1989]
+    
     return df

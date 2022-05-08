@@ -59,7 +59,7 @@ def prepare_forex_data(file_path):
 def transform_fred_stlouisfed_quarterlydata(df, column_index_name):
     df["DATE"] = pd.to_datetime(df["DATE"], format='%Y-%m-%d') + MonthEnd(1)
     
-    df.rename(columns= { df.columns[1] : column_index_name })
+    df = df.rename(columns= { df.columns[1] : column_index_name })
     snake_case_columns(df)
     
     df = df.set_index("date")
@@ -69,9 +69,8 @@ def transform_fred_stlouisfed_quarterlydata(df, column_index_name):
     df_missing[column_index_name] = np.nan
     df_missing = df_missing.set_index("date")
 
+
     df = pd.concat([df, df_missing])
-    df_missing[column_index_name] = df_missing[column_index_name].interpolate(method='linear')
-    # df_missing_months = pd.date_range(start='31-DEC-2021', end='28-FEB-2022', freq='M').to_frame(index=False, name='date')
-    # df_missing_months["pbeefusdm"] = np.nan
-    # df_global_beef = pd.concat([df_global_beef, df_missing_months]).reset_index(drop=True)
+    df[column_index_name] = df[column_index_name].interpolate(method='linear', limit_direction='both')
+
     return df

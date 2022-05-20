@@ -16,7 +16,7 @@ from sklearn.kernel_ridge import KernelRidge
 
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn import metrics
-from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score, accuracy_score, make_scorer
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score, accuracy_score, make_scorer, mean_squared_error
 from sklearn.model_selection import cross_validate
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split    
@@ -196,6 +196,12 @@ def model_using_kfold(X, y):
 #print("min", min_year)
 #cv_splits= max_year - min_year - 1
 #print("cv_splits", cv_splits)
+
+# reference: https://www.geeksforgeeks.org/find-average-list-python/
+def mean(lst):
+    return sum(lst) / len(lst)
+
+# reference: https://medium.com/@soumyachess1496/cross-validation-in-time-series-566ae4981ce4
 def model_using_time_series_split(X, y):
     # https://goldinlocks.github.io/Time-Series-Cross-Validation/ 
     results = []
@@ -218,21 +224,54 @@ def model_using_time_series_split(X, y):
         
         cls = model()
         
-        cv_splits = 10
+        cv_splits = 20 # we have over 20 years of data
         tscv = TimeSeriesSplit(n_splits=cv_splits)
         
-        scoring = ( 'r2', 'neg_mean_absolute_error', 'neg_mean_squared_error')
-        print("Train model:", model.__name__)
-        scores = cross_validate(cls, X, y, cv=tscv, scoring=scoring, return_train_score=True)
+        # This was the older way I was doing it but it wasn't that effective..
+        #scoring = ( 'r2', 'neg_mean_absolute_error', 'neg_mean_squared_error')
+        #print("Train model:", model.__name__)
+        #scores = cross_validate(cls, X, y, cv=tscv, scoring=scoring, return_train_score=True)
         
+        scores = {}
+        scores['train_r2'] = []
+        scores['test_r2'] = []
+        scores['train_neg_mean_absolute_error'] = []
+        scores['test_neg_mean_absolute_error'] = []
+        scores['train_neg_mean_squared_error'] = []
+        scores['test_neg_mean_squared_error'] = []
+        for train_index, test_index in tscv.split(X):
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+            #print(X_train.shape, X_train.index.min(), X_train.index.max())
+            
+            cls.fit(X_train, y_train)
+            
+            y_pred = cls.predict(X_test)
+            r2   = r2_score(y_test, y_pred)
+            mae  = mean_absolute_error(y_test, y_pred)
+            mse  = mean_squared_error(y_test, y_pred) 
+            #acc  = accuracy_score(y_test, y_pred)
+
+            y_pred_tr = cls.predict(X_train)
+            tr_r2   = r2_score(y_train, y_pred_tr)
+            tr_mae  = mean_absolute_error(y_train, y_pred_tr)
+            tr_mse  = mean_squared_error(y_train, y_pred_tr) 
+
+            scores['train_r2'].append(tr_r2)
+            scores['test_r2'].append(r2)
+            scores['train_neg_mean_absolute_error'].append(tr_mae)
+            scores['test_neg_mean_absolute_error'].append(mae)
+            scores['train_neg_mean_squared_error'].append(tr_mse)
+            scores['test_neg_mean_squared_error'].append(mse)
+
         results.append([
             model.__name__,
-            f"{scores['train_r2'].mean():.3f}",
-            f"{scores['test_r2'].mean():.3f}",
-            f"{scores['train_neg_mean_absolute_error'].mean():.3f}",
-            f"{scores['test_neg_mean_absolute_error'].mean():.3f}",
-            f"{scores['train_neg_mean_squared_error'].mean():.3f}",
-            f"{scores['test_neg_mean_squared_error'].mean():.3f}",
+            f"{mean(scores['train_r2']):.3f}",
+            f"{mean(scores['test_r2']):.3f}",
+            f"{mean(scores['train_neg_mean_absolute_error']):.3f}",
+            f"{mean(scores['test_neg_mean_absolute_error']):.3f}",
+            f"{mean(scores['train_neg_mean_squared_error']):.3f}",
+            f"{mean(scores['test_neg_mean_squared_error']):.3f}",
 
         ])
     results = sorted(results, key=itemgetter(2), reverse=True) # sort table by test_r2  

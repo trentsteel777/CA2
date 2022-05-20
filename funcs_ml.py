@@ -320,11 +320,11 @@ def model_using_grid_search_cv_with_timeseriessplit(X, y):
     # https://goldinlocks.github.io/Time-Series-Cross-Validation/ 
     results = []
     for model in [
-        #RandomForestRegressor, # https://pierpaolo28.github.io/blog/blog25/
+        RandomForestRegressor, # https://pierpaolo28.github.io/blog/blog25/
         xgboost.XGBRegressor, # https://www.kaggle.com/code/jayatou/xgbregressor-with-gridsearchcv/script
         LGBMRegressor, # https://stackoverflow.com/questions/63356595/gridsearchcv-with-lgbmregressor-cant-find-best-parameters
-        #GradientBoostingRegressor, # https://www.projectpro.io/recipes/find-optimal-parameters-using-gridsearchcv-for-regression
-        #DecisionTreeRegressor, # https://www.kaggle.com/code/marklvl/decision-tree-regressor-on-bike-sharing-dataset/notebook
+        GradientBoostingRegressor, # https://www.projectpro.io/recipes/find-optimal-parameters-using-gridsearchcv-for-regression
+        DecisionTreeRegressor, # https://www.kaggle.com/code/marklvl/decision-tree-regressor-on-bike-sharing-dataset/notebook
         #BayesianRidge # https://stackoverflow.com/questions/57376860/how-to-run-gridsearchcv-with-ridge-regression-in-sklearn
         ]:
         
